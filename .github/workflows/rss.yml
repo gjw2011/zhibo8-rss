@@ -2,35 +2,36 @@ name: Generate Zhibo8 RSS
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "*/30 * * * *"   # 每30分钟
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write   # ⬅️ 关键！给 Action 写入权限，否则 403
+      contents: write   # 允许推送
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.x"
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
 
-      - name: Install dependencies
-        run: pip install requests lxml
+    - name: Install dependencies
+      run: pip install requests beautifulsoup4 lxml
 
-      - name: Run script
-        run: python zhibo8.py
+    - name: Run script
+      run: python zhibo8.py
 
-      - name: Commit generated XML
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add *.xml
-          git commit -m "Update RSS" || echo "No changes to commit"
-          git push
+    - name: Commit generated XML
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add *.xml
+        git commit -m "Update RSS" || echo "No changes"
+        git push
