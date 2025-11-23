@@ -1,4 +1,38 @@
-name: Generate RSS
+name: Generate Zhibo8 RSS
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}   # ⬅⬅⬅ 必须加！
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install libraries
+      run: pip install requests beautifulsoup4 lxml
+
+    - name: Run script
+      run: python zhibo8.py
+
+    - name: Commit generated XML
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add zhibo8_football_fulltext.xml
+        git commit -m "Update RSS" || echo "No changes"
+        git pushGenerate RSS
 
 on:
   schedule:
