@@ -98,3 +98,14 @@ def main():
 
 if __name__ == "__main__":
     main()
+def main():
+    resp = requests.get(BASE_URL, headers=headers, timeout=10)
+    soup = BeautifulSoup(resp.text, "lxml")
+
+    raw_items = soup.find_all("a", href=re.compile(r"/news/"))
+
+    print("DEBUG: raw_items count =", len(raw_items))
+    print("DEBUG: sample HTML =", resp.text[:500])
+
+    result_items = []
+    ...
