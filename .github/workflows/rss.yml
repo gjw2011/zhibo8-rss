@@ -8,46 +8,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # ⬅️ 关键！给 Action 写入权限，否则 403
 
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}   # ⬅⬅⬅ 必须加！
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-
-    - name: Install libraries
-      run: pip install requests beautifulsoup4 lxml
-
-    - name: Run script
-      run: python zhibo8.py
-
-    - name: Commit generated XML
-      run: |
-        git config user.name "GitHub Actions"
-        git config user.email "actions@github.com"
-        git add zhibo8_football_fulltext.xml
-        git commit -m "Update RSS" || echo "No changes"
-        git pushGenerate RSS
-
-on:
-  schedule:
-    - cron: "*/30 * * * *"   # 每30分钟
-  workflow_dispatch:         # 允许手动运行
-  push:
-    paths:
-      - "script/**"
-      - ".github/workflows/rss.yml"
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Python
@@ -55,18 +20,17 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install requirements
-        run: |
-          pip install feedgen requests bs4 lxml
+      - name: Install dependencies
+        run: pip install requests lxml
 
-      - name: Generate RSS
-        run: |
-          python script/rss.py
+      - name: Run script
+        run: python zhibo8.py
 
-      - name: Commit and push RSS
+      - name: Commit generated XML
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add rss.xml || true
-          git commit -m "Update RSS" -a || true
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add *.xml
+          git commit -m "Update RSS" || echo "No changes to commit"
           git push
