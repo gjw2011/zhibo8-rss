@@ -55,7 +55,7 @@ def generate_rss(items):
 def main():
     resp = requests.get(BASE_URL, headers=headers, timeout=10)
     soup = BeautifulSoup(resp.text, "lxml")
-    raw_items = soup.find_all("a", href=re.compile("news/web"))
+    raw_items = soup.find_all("a", href=re.compile(r"/news/"))
     result_items = []
     for a in raw_items[:50]:
         title = a.text.strip()
