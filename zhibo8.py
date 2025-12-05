@@ -2,7 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import time
-import re
 
 BASE_URL = "https://wap.zhibo8.com/wap/news.html"
 ITEM_URL = "https://wap.zhibo8.com"
@@ -56,6 +55,12 @@ def generate_rss(items):
     with open(OUTPUT, "w", encoding="utf-8") as f:
         f.write(rss)
 
+def main():
+    resp = requests.get(BASE_URL, headers=headers, timeout=10)
+    soup = BeautifulSoup(resp.text, "lxml")
+    news_blocks = soup.find_all("div", class_="list-item")
+
+    result_items = []
 
     for block in news_blocks:
         a = block.find("a")
@@ -64,12 +69,12 @@ def generate_rss(items):
 
         title = block.get_text(strip=True)
 
-        # 过滤非足球
         if "足球" not in title and "足坛" not in title:
             continue
 
         link = ITEM_URL + a["href"]
         pub_date = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
+
         full_text = fetch_full_text(link)
 
         result_items.append((title, link, pub_date, full_text))
