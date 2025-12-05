@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import time
+import re
 
 BASE_URL = "https://wap.zhibo8.com/wap/news.html"
 ITEM_URL = "https://wap.zhibo8.com"
@@ -13,14 +14,19 @@ headers = {
 
 def clean_html(html):
     soup = BeautifulSoup(html, "lxml")
-    for img in soup.find_all("img"):
-        img.decompose()
+    for tag in soup(["img", "script", "style"]):
+        tag.decompose()
     return str(soup)
 
 def fetch_full_text(url):
-    resp = requests.get(url, headers=headers, timeout=10)
+    try:
+        resp = requests.get(url, headers=headers, timeout=10)
+        resp.raise_for_status()
+    except requests.RequestException:
+        return ""
+
     soup = BeautifulSoup(resp.text, "lxml")
-    content = soup.find("div", class_="article")
+    content = soup.find("div", class_=re.compile(r"article|news-content"))
     if content:
         return clean_html(str(content))
     return ""
@@ -28,7 +34,6 @@ def fetch_full_text(url):
 def generate_rss(items):
     build_date = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
     xml_items = ""
-
     for title, link, pub_date, fulltext in items:
         xml_items += f"""
 <item>
@@ -38,7 +43,6 @@ def generate_rss(items):
 <description><![CDATA[{fulltext}]]></description>
 </item>
 """
-
     rss = f"""<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
 <channel>
@@ -51,40 +55,39 @@ def generate_rss(items):
 </channel>
 </rss>
 """
-
     with open(OUTPUT, "w", encoding="utf-8") as f:
         f.write(rss)
 
 def main():
-    resp = requests.get(BASE_URL, headers=headers, timeout=10)
+    try:
+        resp = requests.get(BASE_URL, headers=headers, timeout=10)
+        resp.raise_for_status()
+    except requests.RequestException:
+        return
+
     soup = BeautifulSoup(resp.text, "lxml")
     news_blocks = soup.find_all("div", class_="list-item")
-
     result_items = []
 
     for block in news_blocks:
         a = block.find("a")
         if not a:
             continue
-
-        title = block.get_text(strip=True)
-
+        title = a.get_text(strip=True)
         if "足球" not in title and "足坛" not in title:
             continue
-
         link = ITEM_URL + a["href"]
         pub_date = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
-
         full_text = fetch_full_text(link)
-
+        if not full_text:
+            continue
         result_items.append((title, link, pub_date, full_text))
-
         if len(result_items) >= 50:
             break
+        time.sleep(0.5)
 
-        time.sleep(0.3)
-
-    generate_rss(result_items)
+    if result_items:
+        generate_rss(result_items)
 
 if __name__ == "__main__":
     main()
