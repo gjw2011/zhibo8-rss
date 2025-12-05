@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime
 import time
+import re
 
 BASE_URL = "https://wap.zhibo8.com/wap/news.html"
 ITEM_URL = "https://wap.zhibo8.com"
@@ -20,14 +21,10 @@ def clean_html(html):
 def fetch_full_text(url):
     resp = requests.get(url, headers=headers, timeout=10)
     soup = BeautifulSoup(resp.text, "lxml")
-
-    # 正确的正文选择器
     content = soup.find("div", class_="article")
-
     if content:
         return clean_html(str(content))
     return ""
-
 
 def generate_rss(items):
     build_date = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
@@ -59,15 +56,11 @@ def generate_rss(items):
     with open(OUTPUT, "w", encoding="utf-8") as f:
         f.write(rss)
 
-
-
 def main():
     resp = requests.get(BASE_URL, headers=headers, timeout=10)
     soup = BeautifulSoup(resp.text, "lxml")
 
-    # 正确解析新闻列表
     news_blocks = soup.find_all("div", class_="list-item")
-
     result_items = []
 
     for block in news_blocks:
@@ -83,8 +76,8 @@ def main():
 
         link = ITEM_URL + a["href"]
         pub_date = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S GMT")
-
         full_text = fetch_full_text(link)
+
         result_items.append((title, link, pub_date, full_text))
 
         if len(result_items) >= 50:
@@ -94,18 +87,5 @@ def main():
 
     generate_rss(result_items)
 
-
-
 if __name__ == "__main__":
     main()
-def main():
-    resp = requests.get(BASE_URL, headers=headers, timeout=10)
-    soup = BeautifulSoup(resp.text, "lxml")
-
-    raw_items = soup.find_all("a", href=re.compile(r"/news/"))
-
-    print("DEBUG: raw_items count =", len(raw_items))
-    print("DEBUG: sample HTML =", resp.text[:500])
-
-    result_items = []
-    ...
