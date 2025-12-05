@@ -56,12 +56,6 @@ def generate_rss(items):
     with open(OUTPUT, "w", encoding="utf-8") as f:
         f.write(rss)
 
-def main():
-    resp = requests.get(BASE_URL, headers=headers, timeout=10)
-    soup = BeautifulSoup(resp.text, "lxml")
-
-    news_blocks = soup.find_all("div", class_="list-item")
-    result_items = []
 
     for block in news_blocks:
         a = block.find("a")
